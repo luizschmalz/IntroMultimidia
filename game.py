@@ -8,13 +8,12 @@ pygame.init()
  
 clock = pygame.time.Clock()
 fps = 60
-ligado = True
  
 screen_width = 864
-screen_height = 864
+screen_height = 800
  
 screen = pygame.display.set_mode((screen_width, screen_height))
-pygame.display.set_caption('CinG')
+pygame.display.set_caption('Flappy Bird')
  
 font = pygame.font.SysFont('Bauhaus 93', 60)
  
@@ -24,7 +23,7 @@ ground_scroll = 0
 scroll_speed = 8
 game_over = False
 pipe_gap = 120
-pipe_frequency = 400 
+pipe_frequency = 500
 last_pipe = pygame.time.get_ticks() - pipe_frequency
 score = 0
 pass_pipe = False
@@ -40,6 +39,8 @@ def draw_text(text, font, text_col, x, y):
 	screen.blit(img, (x, y))
  
 def reset_game():
+	if music_playing:
+		pygame.mixer.music.unpause()
 	pipe_group.empty()
 	flappy.rect.x = 100
 	flappy.rect.y = int(screen_height / 2)
@@ -143,11 +144,79 @@ flappy = Bird(100, int(screen_height / 2))
  
 bird_group.add(flappy)
  
-button = Button(screen_width // 2 - 50, screen_height // 2 - 100, button_img)
+button = Button((screen_width // 2) -65, screen_height // 2, button_img)
+ 
+logo_menu = pygame.image.load('img/logo.png')
+logo_menu = pygame.transform.scale(logo_menu, (400, 200))
+menu_bg = pygame.image.load('img/menu.png')
+menu_bg = pygame.transform.scale(menu_bg, (screen_width, screen_height))
+play_button = pygame.image.load('img/start.png')
+play_button = pygame.transform.scale(play_button, (200, 100))
+quit_button = pygame.image.load('img/quit.png')
+quit_button = pygame.transform.scale(quit_button, (200, 100))
+mute_button = pygame.image.load('img/mute_button.png')
+mute_button = pygame.transform.scale(mute_button, (50, 50))
+unmute_button = pygame.image.load('img/unmute_button.png')
+unmute_button = pygame.transform.scale(unmute_button, (50, 50))
+ 
+def main_menu():
+	global music_playing
+	pygame.mixer.init()
+	pygame.mixer.music.load('img/musica.mp3')
+	pygame.mixer.music.set_volume(0.3)
+	pygame.mixer.music.play(-1)
+	music_playing = True
+	current_button = mute_button
+	click = False
+	while True:
+		screen.fill((0, 0, 0))
+		screen.blit(menu_bg, (0, 0))
+		screen.blit(logo_menu, (screen_width // 2 - 200, 140))
+		screen.blit(play_button, (screen_width // 2 - 100, screen_height // 2))
+		screen.blit(quit_button, (screen_width // 2 - 100, screen_height // 2 + 150))
+		screen.blit(current_button, (screen_width // 2 + 370, screen_height // 2 - 390))
+		mx, my = pygame.mouse.get_pos()
+ 
+		button_1 = Rect(screen_width // 2 - 100, screen_height // 2, 200, 100)
+		button_2 = Rect(screen_width // 2 - 100, screen_height // 2 + 150, 200, 100)
+		button_3 = Rect(screen_width // 2 + 370, screen_height // 2 - 390, 50, 50)
+ 
+		if button_1.collidepoint((mx, my)):
+			if click:
+				return False
+		if button_2.collidepoint((mx, my)):
+			if click:
+				pygame.quit()
+ 
+		if button_3.collidepoint((mx, my)):
+			if click:
+				if music_playing:
+					pygame.mixer.music.pause()
+					music_playing = False
+					current_button = unmute_button
+				else:
+					pygame.mixer.music.unpause()
+					music_playing = True
+					current_button = mute_button
+ 
+		click = False
+		for event in pygame.event.get():
+			if event.type == QUIT:
+				pygame.quit()
+			if event.type == MOUSEBUTTONDOWN:
+				if event.button == 1:
+					click = True
+ 
+		pygame.display.update()
+		clock.tick(60)
  
  
 run = True
+main_menu_active = True
 while run:
+	
+	if main_menu_active:
+		main_menu_active = main_menu()
  
 	clock.tick(fps)
 	screen.blit(bg, (0,0))
@@ -177,21 +246,20 @@ while run:
 		game_over = True
  
  
-	if ligado == True and game_over == False:
+	if game_over == False:
 		time_now = pygame.time.get_ticks()
 		if time_now - last_pipe > pipe_frequency*5:
-			if score < 3:
-				scroll_speed = 8
+			if score < 2:
 				pipe_frequency = 500
-			elif score >= 3:
-				scroll_speed = 8
+			elif score >= 2:
 				pipe_frequency = 400	
+			elif score >= 4:
+				pipe_frequency = 300
 			elif score >= 6:
-				scroll_speed = 8
-				pipe_frequency = 300	
+				pipe_frequency = 200	
 			else:
-				scroll_speed = 8
-				pipe_frequency = 200
+				pipe_frequency = 100
+ 
 			pipe_height = random.randint(-100, 100)
 			btm_pipe = Pipe(screen_width, int(screen_height / 2) + int(pipe_height+30), -1)
 			top_pipe = Pipe(screen_width, int(screen_height / 2) + int(pipe_height+30), 1)
@@ -206,6 +274,8 @@ while run:
 			ground_scroll = 0
 	
 	if game_over == True:
+		if music_playing:
+			pygame.mixer.music.pause()
 		if button.draw():
 			game_over = False
 			score = reset_game()
@@ -216,6 +286,5 @@ while run:
 			run = False
  
 	pygame.display.update()
-    
  
 pygame.quit()
